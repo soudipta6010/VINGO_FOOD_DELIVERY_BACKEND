@@ -13,6 +13,10 @@ export const createEditShop = async (req, res) => {
     let shop = await Shop.findOne({ owner: req.userId });
 
     if (!shop) {
+      if (!image) {
+        return res.status(400).json({ message: "Shop image is required" });
+      }
+
       shop = await Shop.create({
         name,
         city,
@@ -22,21 +26,26 @@ export const createEditShop = async (req, res) => {
         owner: req.userId,
       });
     } else {
+      const updateData = {
+        name,
+        city,
+        state,
+        address,
+        owner: req.userId,
+      };
+
+      if (image) {
+        updateData.image = image;
+      }
+
       shop = await Shop.findByIdAndUpdate(
         shop._id,
-        {
-          name,
-          city,
-          state,
-          address,
-          image,
-          owner: req.userId,
-        },
+        updateData,
         { new: true }
       );
     }
 
-    await Shop.populate("owner");
+    await shop.populate("owner items");
     return res.status(201).json(shop);
   } catch (error) {
     return res.status(500).json({ message: `Create shop error ${error}` });

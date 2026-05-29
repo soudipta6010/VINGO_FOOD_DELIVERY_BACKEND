@@ -1,6 +1,12 @@
 import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
 
+const removeLocalFile = (file) => {
+  if (file && fs.existsSync(file)) {
+    fs.unlinkSync(file);
+  }
+};
+
 const uploadOnCloudinary = async (file) => {
   cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -9,11 +15,11 @@ const uploadOnCloudinary = async (file) => {
   });
   try {
     const result = await cloudinary.uploader.upload(file);
-    fs.unlinkSync();
+    removeLocalFile(file);
     return result.secure_url;
   } catch (error) {
-    fs.unlinkSync();
-    console.log(error);
+    removeLocalFile(file);
+    throw error;
   }
 };
 
