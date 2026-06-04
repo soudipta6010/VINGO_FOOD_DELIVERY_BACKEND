@@ -38,11 +38,7 @@ export const createEditShop = async (req, res) => {
         updateData.image = image;
       }
 
-      shop = await Shop.findByIdAndUpdate(
-        shop._id,
-        updateData,
-        { new: true }
-      );
+      shop = await Shop.findByIdAndUpdate(shop._id, updateData, { new: true });
     }
 
     await shop.populate("owner items");
@@ -54,12 +50,17 @@ export const createEditShop = async (req, res) => {
 
 export const getMyShop = async (req, res) => {
   try {
-    const shop = await Shop.findOne({owner:req.userId}).populate("owner items");
-    if(!shop){
+    const shop = await Shop.findOne({ owner: req.userId })
+      .populate("owner")
+      .populate({
+        path: "items",
+        options: { sort: { updatedAt: -1 } },
+      });
+    if (!shop) {
       return null;
     }
-    return res.status(200).json(shop)
+    return res.status(200).json(shop);
   } catch (error) {
-    return res.status(500).json({message: `Get my shop error ${error}`})
+    return res.status(500).json({ message: `Get my shop error ${error}` });
   }
 };
