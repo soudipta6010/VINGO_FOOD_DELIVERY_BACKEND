@@ -6,6 +6,7 @@ const shopOrderItemSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Item",
     },
+    name: String,
     price: Number,
     quantity: Number,
   },
@@ -27,7 +28,9 @@ const shopOrderSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-const orderSchema = new mongoose.schema(
+
+
+const orderSchema = new mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
@@ -46,7 +49,7 @@ const orderSchema = new mongoose.schema(
     totalAmount: {
       type: Number,
     },
-    shopOrder: [shopOrderSchema],
+    shopOrders: [shopOrderSchema],
   },
   { timestamps: true }
 );

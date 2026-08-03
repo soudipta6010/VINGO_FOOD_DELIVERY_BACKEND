@@ -11,6 +11,7 @@ import cors from "cors";
 
 import itemRouter from "./routes/item.routes.js";
 import shopRouter from "./routes/shop.routes.js";
+import orderRouter from "./routes/order.routes.js";
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -27,6 +28,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
 app.use("/api/shop", shopRouter);
 app.use("/api/item", itemRouter);
+app.use("/api/order", orderRouter);
 
 app.listen(port, () => {
   connectDb();
