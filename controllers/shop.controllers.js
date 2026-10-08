@@ -38,7 +38,7 @@ export const createEditShop = async (req, res) => {
         updateData.image = image;
       }
 
-      shop = await Shop.findByIdAndUpdate(shop._id, updateData, { new: true });
+      shop = await Shop.findByIdAndUpdate(shop._id, updateData, { returnDocument: 'after' });
     }
 
     await shop.populate("owner items");

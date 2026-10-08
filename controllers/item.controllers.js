@@ -55,7 +55,7 @@ export const editItem = async (req, res) => {
         price,
         image,
       },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!item) {
