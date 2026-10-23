@@ -401,7 +401,7 @@ export const verifyDeliveryOtp = async (req, res) => {
     if (
       shopOrder.deliveryOtp !== otp ||
       !shopOrder.otpExpires ||
-      shopOrder.otpExpires <  Date.now()
+      shopOrder.otpExpires < Date.now()
     ) {
       return res.status(400).json({ message: "Invalid/Expired OTP" });
     }
