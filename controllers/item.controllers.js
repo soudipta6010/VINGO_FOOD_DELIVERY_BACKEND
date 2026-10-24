@@ -150,7 +150,9 @@ export const searchItems = async (req, res) => {
   try {
     const { query, city } = req.query;
     if (!query || !city) {
-      return null;
+      return res.status(400).json({
+        message: "Query and city are required",
+      });
     }
     const shops = await Shop.find({
       city: { $regex: new RegExp(`^${city}$`, "i") },
@@ -163,10 +165,11 @@ export const searchItems = async (req, res) => {
     const items = await Item.find({
       shop: { $in: shopIds },
       $or: [
-        { name: { $regex: query, options: "i" } }, //case insensitive
-        { category: { $regex: query, options: "i" } },
+        { name: { $regex: query, $options: "i" } }, //case insensitive
+        { category: { $regex: query, $options: "i" } },
       ],
     }).populate("shop", "name image");
+    return res.status(200).json(items);
   } catch (error) {
     return res.status(500).json({ message: `search item error ${error}` });
   }
