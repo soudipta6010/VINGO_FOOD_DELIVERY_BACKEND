@@ -86,7 +86,7 @@ const orderSchema = new mongoose.Schema(
       type:String,
       default: ""
     },
-    razorpayPamentId:{
+    razorpayPaymentId:{
       type:String,
       default: ""
     }

@@ -80,14 +80,13 @@ export const placeOrder = async (req, res) => {
         deliveryAddress,
         totalAmount,
         shopOrders,
-        razorpayOrderId: await razorOrder.id,
+        razorpayOrderId: razorOrder.id,
         payment: false,
       });
 
       return res.status(200).json({
         razorOrder,
         orderId: newOrder._id,
-        
       });
     }
 
@@ -104,6 +103,27 @@ export const placeOrder = async (req, res) => {
       "name image price"
     );
     await newOrder.populate("shopOrders.shop", "name");
+    await newOrder.populate("shopOrders.owner", "name socketId");
+    await newOrder.populate("user", "name email mobile");
+
+    const io = req.app.get("io");
+
+    if (io) {
+      newOrder.shopOrders.forEach((shopOrder) => {
+        const ownerSocketId = shopOrder.owner.socketId;
+        if (ownerSocketId) {
+          io.to(ownerSocketId).emit("newOrder", {
+            _id: newOrder._id,
+            paymentMethod: newOrder.paymentMethod,
+            user: newOrder.user,
+            shopOrders: shopOrder,
+            createdAt: newOrder.createdAt,
+            deliveryAddress: newOrder.deliveryAddress,
+            payment: newOrder.payment,
+          });
+        }
+      });
+    }
 
     return res.status(201).json(newOrder);
   } catch (error) {
@@ -127,8 +147,34 @@ export const verifyPayment = async (req, res) => {
     order.razorpayPaymentId = razorpay_payment_id;
     await order.save();
 
-    await order.populate("shopOrders.shopOrderItems.item", "name image price");
+    await order.populate(
+      "shopOrders.shopOrderItems.item",
+      "name image price"
+    );
     await order.populate("shopOrders.shop", "name");
+    await order.populate("shopOrders.owner", "name socketId");
+    await order.populate("user", "name email mobile");
+
+    const io = req.app.get("io");
+
+    if (io) {
+      order.shopOrders.forEach((shopOrder) => {
+        const ownerSocketId = shopOrder.owner.socketId;
+        if (ownerSocketId) {
+          io.to(ownerSocketId).emit("newOrder", {
+            _id: order._id,
+            paymentMethod: order.paymentMethod,
+            user: order.user,
+            shopOrders: shopOrder,
+            createdAt: order.createdAt,
+            deliveryAddress: order.deliveryAddress,
+            payment: order.payment,
+          });
+        }
+      });
+    }
+
+    
 
     return res.status(200).json(order);
   } catch (error) {
@@ -163,7 +209,7 @@ export const getMyOrders = async (req, res) => {
         shopOrders: order.shopOrders.find((o) => o.owner._id == req.userId),
         createdAt: order.createdAt,
         deliveryAddress: order.deliveryAddress,
-        payment: order.payment
+        payment: order.payment,
       }));
 
       return res.status(200).json(filteredOrder);
@@ -208,7 +254,7 @@ export const updateOrderStatus = async (req, res) => {
         status: { $nin: ["brodcasted", "completed"] },
       }).distinct("assignedTo");
 
-      const busyIdSet = new Set(busyIds.map((id) => String()));
+      const busyIdSet = new Set(busyIds.map((id) => String(id)));
 
       const availableBoys = nearByDeliveryBoys.filter(
         (b) => !busyIdSet.has(String(b._id))
@@ -244,15 +290,27 @@ export const updateOrderStatus = async (req, res) => {
       }));
     }
 
-    // await shopOrder.save();
+    
     await order.save();
 
     const updatedShopOrder = order.shopOrders.find((o) => o.shop == shopId);
     await order.populate("shopOrders.shop", "name");
-    await order.populate(
-      "shopOrders.assignedDeliveryBoy",
-      "fullName email mobile"
-    );
+    await order.populate("shopOrders.assignedDeliveryBoy", "fullName email mobile");
+    await order.populate("user", "socketId");
+
+    const io = req.app.get('io');
+    if(io){
+      const userSocketId = order.user.socketId;
+      if( userSocketId){
+        io.to(userSocketId).emit('update-status', {
+          orderId:order._id,
+          shopId:updatedShopOrder.shop._id,
+          status:updatedShopOrder.status,
+          userId:order.user._id
+        })
+        
+      }
+    }
 
     return res.status(200).json({
       shopOrder: updatedShopOrder,
@@ -335,7 +393,7 @@ export const acceptOrder = async (req, res) => {
   } catch (error) {
     return res.status(500).json({ message: `accept order error ${error}` });
   }
-};
+}; //4.12min
 
 export const getCurrentOrder = async (req, res) => {
   try {

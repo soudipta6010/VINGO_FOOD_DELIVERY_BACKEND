@@ -31,7 +31,7 @@ const io= new Server(server,{
 app.set("io", io);
 
 
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 8000;
 app.use(cors({
   origin: "http://localhost:5173",
   credentials: true
@@ -47,10 +47,10 @@ app.use("/api/shop", shopRouter);
 app.use("/api/item", itemRouter);
 app.use("/api/order", orderRouter);
 
-
+socketHandler(io);
 server.listen(port, () => {
   connectDb();
   console.log(`Server started at ${port}`);
 });
-socketHandler(io);
+
 
