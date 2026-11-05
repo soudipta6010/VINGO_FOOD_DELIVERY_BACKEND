@@ -147,10 +147,7 @@ export const verifyPayment = async (req, res) => {
     order.razorpayPaymentId = razorpay_payment_id;
     await order.save();
 
-    await order.populate(
-      "shopOrders.shopOrderItems.item",
-      "name image price"
-    );
+    await order.populate("shopOrders.shopOrderItems.item", "name image price");
     await order.populate("shopOrders.shop", "name");
     await order.populate("shopOrders.owner", "name socketId");
     await order.populate("user", "name email mobile");
@@ -173,8 +170,6 @@ export const verifyPayment = async (req, res) => {
         }
       });
     }
-
-    
 
     return res.status(200).json(order);
   } catch (error) {
@@ -278,7 +273,7 @@ export const updateOrderStatus = async (req, res) => {
         status: "brodcasted",
       });
 
-      shopOrder.assignedDeliveryBoy = deliveryAssignment.assignedTo;
+      // shopOrder.assignedDeliveryBoy = deliveryAssignment.assignedTo;
 
       shopOrder.assignment = deliveryAssignment._id;
       deliveryBoysPayLoad = availableBoys.map((b) => ({
@@ -288,27 +283,51 @@ export const updateOrderStatus = async (req, res) => {
         latitude: b.location.coordinates?.[1],
         mobile: b.mobile,
       }));
+
+      await deliveryAssignment.populate('order')
+      await deliveryAssignment.populate('shop')
+
+      const io = req.app.get("io");
+      if (io) {
+        availableBoys.forEach((boy) => {
+          const boySocketId = boy.socketId;
+          if (boySocketId) {
+            io.to(boySocketId).emit('newAssignment', {
+              sentTo: boy._id,
+              assignmentId: deliveryAssignment._id,
+              orderId: deliveryAssignment.order._id,
+              shopName: deliveryAssignment.shop.name,
+              deliveryAddress: deliveryAssignment.order.deliveryAddress,
+              items:deliveryAssignment.order.shopOrders.find((so) => so._id.equals(deliveryAssignment.shopOrderId))?.shopOrderItems || [],
+              subtotal: deliveryAssignment.order.shopOrders.find((so) =>
+                so._id.equals(deliveryAssignment.shopOrderId)
+              )?.subtotal,
+            });
+          }
+        });
+      }
     }
 
-    
     await order.save();
 
     const updatedShopOrder = order.shopOrders.find((o) => o.shop == shopId);
     await order.populate("shopOrders.shop", "name");
-    await order.populate("shopOrders.assignedDeliveryBoy", "fullName email mobile");
+    await order.populate(
+      "shopOrders.assignedDeliveryBoy",
+      "fullName email mobile"
+    );
     await order.populate("user", "socketId");
 
-    const io = req.app.get('io');
-    if(io){
+    const io = req.app.get("io");
+    if (io) {
       const userSocketId = order.user.socketId;
-      if( userSocketId){
-        io.to(userSocketId).emit('update-status', {
-          orderId:order._id,
-          shopId:updatedShopOrder.shop._id,
-          status:updatedShopOrder.status,
-          userId:order.user._id
-        })
-        
+      if (userSocketId) {
+        io.to(userSocketId).emit("update-status", {
+          orderId: order._id,
+          shopId: updatedShopOrder.shop._id,
+          status: updatedShopOrder.status,
+          userId: order.user._id,
+        });
       }
     }
 
@@ -364,7 +383,7 @@ export const acceptOrder = async (req, res) => {
 
     const alreadyAssigned = await DeliveryAssignment.findOne({
       assignedTo: req.userId,
-      status: { $nin: ["broadcasted", "completed", ""] },
+      status: { $nin: ["brodcasted", "completed", ""] },
     });
     if (alreadyAssigned) {
       return res
