@@ -220,7 +220,11 @@ export const updateOrderStatus = async (req, res) => {
     const { status } = req.body;
     const order = await Order.findById(orderId);
 
-    const shopOrder = order.shopOrders.find((o) => o.shop == shopId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    const shopOrder = order.shopOrders.find((o) => o.shop.toString() === shopId);
     if (!shopOrder) {
       return res.status(400).json({ message: "shop order not found" });
     }
@@ -262,6 +266,7 @@ export const updateOrderStatus = async (req, res) => {
         return res.json({
           message:
             "order status updated but there is no available delivery boys ",
+            
         });
       }
 
@@ -296,7 +301,7 @@ export const updateOrderStatus = async (req, res) => {
               sentTo: boy._id,
               assignmentId: deliveryAssignment._id,
               orderId: deliveryAssignment.order._id,
-              shopName: deliveryAssignment.shop.name,
+              shopName: deliveryAssignment.shop.name,  
               deliveryAddress: deliveryAssignment.order.deliveryAddress,
               items:deliveryAssignment.order.shopOrders.find((so) => so._id.equals(deliveryAssignment.shopOrderId))?.shopOrderItems || [],
               subtotal: deliveryAssignment.order.shopOrders.find((so) =>
@@ -310,7 +315,7 @@ export const updateOrderStatus = async (req, res) => {
 
     await order.save();
 
-    const updatedShopOrder = order.shopOrders.find((o) => o.shop == shopId);
+    const updatedShopOrder = order.shopOrders.find((o) => o.shop.toString() === shopId);
     await order.populate("shopOrders.shop", "name");
     await order.populate(
       "shopOrders.assignedDeliveryBoy",
@@ -335,10 +340,10 @@ export const updateOrderStatus = async (req, res) => {
       shopOrder: updatedShopOrder,
       assignedDeliveryBoy: updatedShopOrder?.assignedDeliveryBoy,
       availableBoys: deliveryBoysPayLoad,
-      assignment: updatedShopOrder?.assignment._id,
+      assignment: updatedShopOrder?.assignment?._id,
     });
   } catch (error) {
-    return res.status(500).json({ message: `order status error ${error}` });
+    return res.status(500).json({ message: `Update order status error ${error}` });
   }
 };
 
