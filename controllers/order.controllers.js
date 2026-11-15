@@ -563,3 +563,6 @@ export const verifyDeliveryOtp = async (req, res) => {
       .json({ message: `verify delivery otp error ${error}` });
   }
 };
+
+
+// 5.52 min
